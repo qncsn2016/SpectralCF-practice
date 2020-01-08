@@ -13,6 +13,7 @@ class SpectralCF(object):
         self.batch_size = batch_size
         self.K = K
         self.decay = decay
+        print("here 2")
 
         self.A = self.adjacient_matrix(self_connection=True)
         self.D = self.degree_matrix()
@@ -39,9 +40,7 @@ class SpectralCF(object):
             self.filters.append(
                 tf.Variable(
                     tf.random_normal([self.emb_dim, self.emb_dim], mean=0.01, stddev=0.02, dtype=tf.float32))
-
             )
-
 
         A_hat = np.dot(self.U, self.U.T) + np.dot(np.dot(self.U, self.lamda), self.U.T)
         #A_hat += np.dot(np.dot(self.U, self.lamda_2), self.U.T)

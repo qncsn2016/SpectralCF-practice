@@ -4,8 +4,8 @@ import tensorflow as tf
 
 
 def main():
-    model = SpectralCF(K=K, graph=data_generator.R, n_users=USER_NUM, n_items=ITEM_NUM, emb_dim=EMB_DIM,
-                     lr=LR, decay=DECAY, batch_size=BATCH_SIZE,DIR=DIR)
+    model = SpectralCF(K=K, graph=data_generator.R, n_users=USER_NUM, n_items=ITEM_NUM,
+                       emb_dim=EMB_DIM, lr=LR, decay=DECAY, batch_size=BATCH_SIZE,DIR=DIR)
     print(model.model_name)
 
     config = tf.ConfigProto()
@@ -15,12 +15,14 @@ def main():
 
     for epoch in range(N_EPOCH):
         users, pos_items, neg_items = data_generator.sample()
+
+        print("train begin")
         _, loss = sess.run([model.updates, model.loss],
                                            feed_dict={model.users: users, model.pos_items: pos_items,
                                                       model.neg_items: neg_items})
 
         users_to_test = list(data_generator.test_set.keys())
-
+        print("test begin")
         ret = test(sess, model, users_to_test)
 
 

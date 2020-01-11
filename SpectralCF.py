@@ -11,15 +11,15 @@ class SpectralCF(object):
         self.n_items = n_items
         self.emb_dim = emb_dim
         self.batch_size = batch_size
-        self.K = K
+        self.K = K  #层数
         self.decay = decay
         print("here 2")
 
-        self.A = self.adjacient_matrix(self_connection=True)
-        self.D = self.degree_matrix()
-        self.L = self.laplacian_matrix(normalized=True)
+        self.A = self.adjacient_matrix(self_connection=True) #邻接矩阵
+        self.D = self.degree_matrix() #A的度矩阵 是对角阵
+        self.L = self.laplacian_matrix(normalized=True) #拉普拉斯矩阵
 
-        self.lamda, self.U = np.linalg.eig(self.L)
+        self.lamda, self.U = np.linalg.eig(self.L)  #返回特征值和特征向量
         self.lamda = np.diag(self.lamda)
 
         # placeholder definition
@@ -27,7 +27,7 @@ class SpectralCF(object):
         self.pos_items = tf.placeholder(tf.int32, shape=(self.batch_size, ))
         self.neg_items = tf.placeholder(tf.int32, shape=(self.batch_size,))
 
-
+        # 这俩是embedding dict
         self.user_embeddings = tf.Variable(
             tf.random_normal([self.n_users, self.emb_dim], mean=0.01, stddev=0.02, dtype=tf.float32),
             name='user_embeddings')
@@ -44,26 +44,26 @@ class SpectralCF(object):
 
         A_hat = np.dot(self.U, self.U.T) + np.dot(np.dot(self.U, self.lamda), self.U.T)
         #A_hat += np.dot(np.dot(self.U, self.lamda_2), self.U.T)
-        A_hat = A_hat.astype(np.float32)
+        A_hat = A_hat.astype(np.float32) #(n_users+n_items) × (n_users+n_items)
 
-        embeddings = tf.concat([self.user_embeddings, self.item_embeddings], axis=0)
+        embeddings = tf.concat([self.user_embeddings, self.item_embeddings], axis=0) #(n_users+n_items) × emb_dim
         all_embeddings = [embeddings]
         for k in range(0, self.K):
-
             embeddings = tf.matmul(A_hat, embeddings)
-
             #filters = self.filters[k]#tf.squeeze(tf.gather(self.filters, k))
             embeddings = tf.nn.sigmoid(tf.matmul(embeddings, self.filters[k]))
             all_embeddings += [embeddings]
         all_embeddings = tf.concat(all_embeddings, 1)
         self.u_embeddings, self.i_embeddings = tf.split(all_embeddings, [self.n_users, self.n_items], 0)
 
-        self.u_embeddings = tf.nn.embedding_lookup(self.u_embeddings, self.users)
+        self.u_embeddings = tf.nn.embedding_lookup(self.u_embeddings, self.users) # batch_size × newemb_dm
         self.pos_i_embeddings = tf.nn.embedding_lookup(self.i_embeddings, self.pos_items)
         self.neg_i_embeddings = tf.nn.embedding_lookup(self.i_embeddings, self.neg_items)
 
-        self.all_ratings = tf.matmul(self.u_embeddings, self.i_embeddings, transpose_a=False, transpose_b=True)
-
+        self.all_ratings = tf.matmul(
+            self.u_embeddings, self.i_embeddings,
+            transpose_a=False, transpose_b=True
+        ) # batch_size × n_items
 
         self.loss = self.create_bpr_loss(self.u_embeddings, self.pos_i_embeddings, self.neg_i_embeddings)
 
@@ -89,7 +89,7 @@ class SpectralCF(object):
         A[:self.n_users, self.n_users:] = self.graph
         A[self.n_users:, :self.n_users] = self.graph.T
         if self_connection == True:
-            return np.identity(self.n_users+self.n_items,dtype=np.float32) + A
+            return np.identity(self.n_users+self.n_items,dtype=np.float32) + A  #加上同等大小的单位矩阵
         return A
 
     def degree_matrix(self):
